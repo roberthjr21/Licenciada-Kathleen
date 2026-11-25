@@ -1,78 +1,127 @@
 <!doctype html>
-<html lang="es-CO"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6ead8">
 <title>Licenciada Kathleen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#faf4e9;color:#44283c;font-family:"Baskervville",Georgia,serif}
 main{max-width:48rem;margin:auto;text-align:center;padding:clamp(2rem,7vw,5rem) 1.25rem}
 h1{font-weight:400;font-size:clamp(3.5rem,11vw,7rem);letter-spacing:-.065em;line-height:.95;margin:.35em 0 .65em}
 h1 span{display:block;font:500 .22em/2 system-ui;text-transform:uppercase;letter-spacing:.27em}
-details{position:relative;isolation:isolate;max-width:32rem;margin:auto}
+details{max-width:32rem;margin:auto}
 summary{list-style:none;cursor:pointer;padding:2rem 0 1rem;color:#684355}
 summary::-webkit-details-marker{display:none}
 .envelope{display:block;position:relative;width:min(76vw,20rem);aspect-ratio:1.65;margin:auto auto 1.4rem;background:#a36470;perspective:800px;box-shadow:0 10px 22px #50334426}
-.envelope:before,.envelope:after{content:"";position:absolute;inset:0}
+.envelope:before,.envelope:after,.sheet{content:"";position:absolute;inset:0}
+.sheet{inset:6% 6% 3%;background:repeating-linear-gradient(#fff8e8 0 17px,#e3d2b9 18px,#fff8e8 19px)}
 .envelope:before{background:linear-gradient(28deg,#ce9297,#dfacaa);clip-path:polygon(0 0,50% 62%,100% 0,100% 100%,0 100%);z-index:2}
 .envelope:after{background:#e8bcbb;clip-path:polygon(0 0,100% 0,50% 65%);transform-origin:top;z-index:3}
 .seal{position:absolute;z-index:4;left:50%;top:52%;transform:translate(-50%,-50%);border-radius:50%;background:#80384b;color:#fff1d5;padding:.45em .62em;box-shadow:0 2px 4px #60334055}
-details[open] summary{padding:0}
-details[open] .envelope{
-  position:absolute;top:2rem;left:0;right:0;z-index:2;
-  pointer-events:none;transform-origin:65% 50%;
-  animation:fall-away .82s .84s cubic-bezier(.55,.02,.88,.44) both;
-}
-details[open] .envelope:after{
-  transform:rotateX(155deg);
-  transition:transform .52s ease-in-out;
-}
-details[open] .seal{opacity:0;transition:opacity .2s}
-details[open] .open-label,details:not([open]) .close-label{display:none}
-.close-label{display:block;margin:1rem auto 0;text-decoration:underline;text-underline-offset:.22em}
-details[open]{display:flex;flex-direction:column}
-details[open] summary{order:1}
-article{
-  text-align:left;background:#fffaf0;padding:clamp(1.4rem,6vw,3rem);
-  border:1px solid #d9c6b3;box-shadow:0 8px 22px #58402b0f;
-  font-size:1.16rem;line-height:1.65;transform-origin:top center;
-  animation:draw-letter 1.2s .36s cubic-bezier(.22,.65,.3,1) both;
-}
-@keyframes draw-letter{
-  from{opacity:0;transform:translateY(4rem) scale(.54);clip-path:inset(0 0 78%)}
-  42%{opacity:1;transform:translateY(-1.5rem) scale(.66);clip-path:inset(0 0 52%)}
-  to{opacity:1;transform:none;clip-path:inset(0)}
-}
-@keyframes fall-away{
-  from{opacity:1;transform:none}
-  35%{opacity:1;transform:translateY(1.4rem) rotate(5deg)}
-  to{opacity:0;visibility:hidden;transform:translateY(12rem) rotate(18deg)}
-}
-@media(prefers-reduced-motion:reduce){details[open] .envelope{visibility:hidden}}
+details[open] .envelope:after{transform:rotateX(165deg);transition:transform .55s}
+details[open] .seal,details[open] .open-label,details:not([open]) .close-label{display:none}
+details[open] .sheet{transform:translateY(-28%);transition:transform .6s .38s}
+article{text-align:left;background:#fffaf0;padding:clamp(1.4rem,6vw,3rem);border:1px solid #d9c6b3;box-shadow:0 8px 22px #58402b0f;font-size:1.16rem;line-height:1.65;transform-origin:top;animation:unfold .75s .45s backwards}
+@keyframes unfold{from{opacity:0;transform:perspective(650px) rotateX(-30deg) translateY(-18px)}}
 figure{margin:2.5rem auto}img{max-width:100%;border:9px solid white;box-shadow:0 4px 16px #40263222}
 footer{margin:3.4rem auto 0;max-width:27rem;font-size:1.45rem;font-style:italic;line-height:1.4}
 footer:before{content:"✧";display:block;color:#976c52;margin-bottom:.7rem}
 @media(prefers-reduced-motion:reduce){*,*:after{animation:none!important;transition:none!important}}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
-<details><summary><span class="envelope" aria-hidden="true"><i class="seal">K</i></span><span class="open-label">Toca el sobre para abrir tu carta</span><span class="close-label">Cerrar la carta</span></summary>
+<details><summary><span class="envelope" aria-hidden="true"><i class="sheet"></i><i class="seal">K</i></span><span class="open-label">Toca el sobre para abrir tu carta</span><span class="close-label">Cerrar la carta</span></summary>
 <article><strong>Kathleen,</strong>
 <p>Mientras escogía las fotos para tu video, pensaba en qué decirte cuando se acabara la música. Al final quise dejarte esto por escrito para que lo puedas volver a leer cuando quieras.</p>
 <p>Qué bonito poder llamarte licenciada, hermana. Me alegra muchísimo verte llegar a este día y me siento muy orgulloso de ti. Te quiero mucho.</p>
 <p>Un abrazo de tu hermano,<br><em>Robert</em></p></article></details>
 <section id="album" aria-label="Fotos de nosotros" hidden><h2>Nosotros</h2></section>
 <footer>De todos los nombres que tienes, mi favorito siempre va a ser «mi hermana».</footer>
-</main><script>
-// Cada recuerdo lleva la ruta de la foto y una descripción.
+</main>
+
+<script>
+const scene = document.getElementById('scene');
+const env = scene.querySelector('.env');
+const envWrap = document.getElementById('envWrap');
+const cartaWrap = document.getElementById('cartaWrap');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let temporizador;
+
+function abrir() {
+  clearTimeout(temporizador);
+  scene.classList.add('open');
+  env.setAttribute('aria-expanded', 'true');
+  if (!reduce) petalos();
+  temporizador = setTimeout(() => {
+    scene.classList.add('read');
+    document.body.classList.add('read');
+    envWrap.inert = true;
+    cartaWrap.inert = false;
+    cartaWrap.removeAttribute('aria-hidden');
+    cartaWrap.focus({ preventScroll: true });
+  }, reduce ? 0 : 1400);
+}
+
+function cerrar() {
+  clearTimeout(temporizador);
+  scene.classList.remove('read');
+  document.body.classList.remove('read');
+  envWrap.inert = false;
+  cartaWrap.inert = true;
+  cartaWrap.setAttribute('aria-hidden', 'true');
+  env.setAttribute('aria-expanded', 'false');
+  temporizador = setTimeout(() => scene.classList.remove('open'), reduce ? 0 : 700);
+  env.focus({ preventScroll: true });
+}
+
+// Toda la zona del sobre (incluido el texto) abre la carta; ignora toques repetidos mientras anima.
+envWrap.addEventListener('click', () => { if (!scene.classList.contains('open')) abrir(); });
+document.getElementById('guardar').addEventListener('click', cerrar);
+
+function petalos() {
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('i');
+    p.className = 'petalo';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.setProperty('--s', (.6 + Math.random() * .6) + 'rem');
+    p.style.setProperty('--x', (Math.random() * 12 - 6) + 'rem');
+    p.style.setProperty('--d', (6 + Math.random() * 4) + 's');
+    p.style.setProperty('--r', (Math.random() * 1.8) + 's');
+    document.body.append(p);
+    setTimeout(() => p.remove(), 11000);
+  }
+}
+
+// Cada recuerdo: ruta de la foto, descripción (para accesibilidad) y, si quieres, un pie de foto.
+// Ejemplo: { ruta: 'fotos/graduacion.jpg', descripcion: 'Kathleen con su toga', pie: 'El gran día' }
 const recuerdos = [];
+
 const album = document.getElementById('album');
-for (const recuerdo of recuerdos) {
+const observador = new IntersectionObserver((entradas) => {
+  for (const e of entradas) if (e.isIntersecting) { e.target.classList.add('visto'); observador.unobserve(e.target); }
+}, { threshold: .2 });
+
+recuerdos.forEach((recuerdo, i) => {
   const foto = new Image();
   foto.src = recuerdo.ruta;
   foto.alt = recuerdo.descripcion;
   foto.loading = 'lazy';
+  foto.decoding = 'async';
   const marco = document.createElement('figure');
+  marco.style.setProperty('--giro', (i % 2 ? 1.2 : -1.2) + 'deg');
   marco.append(foto);
+  if (recuerdo.pie) {
+    const pie = document.createElement('figcaption');
+    pie.textContent = recuerdo.pie;
+    marco.append(pie);
+  }
+  foto.onerror = () => marco.remove();
   album.append(marco);
-}
+  observador.observe(marco);
+});
 album.hidden = recuerdos.length === 0;
 </script></body></html>
