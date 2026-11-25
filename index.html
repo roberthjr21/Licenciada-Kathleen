@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6ead8">
 <meta name="description" content="Una carta para la licenciada Kathleen">
 <meta name="robots" content="noindex">
-<script>document.documentElement.classList.add('js');setTimeout(()=>document.documentElement.classList.add('titulo-listo'),2500)</script>
+<script>document.documentElement.classList.add('js');if(location.hash==='#animar')document.documentElement.classList.add('forzar');setTimeout(()=>document.documentElement.classList.add('titulo-listo'),2500)</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🎓%3C/text%3E%3C/svg%3E">
 <title>Licenciada Kathleen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,7 @@ main{padding-inline:max(1.25rem,env(safe-area-inset-left),env(safe-area-inset-ri
 #photos img{object-position:50% 30%}
 dialog img{max-height:72vh;max-height:72dvh}
 dialog button{padding:.7rem 1rem}
-#album[hidden]{display:none}
+.huecos[hidden]{display:none}
 @media(hover:hover){.env:hover{filter:brightness(1.04)}}
 @media(max-width:420px){.scene{--w:min(84vw,21rem)}.letter-inner{padding-inline:0}.e-seal{width:2.3rem;font-size:1.2rem}}
 @media(prefers-reduced-motion:reduce){.petalo{display:none}}
@@ -71,6 +71,8 @@ h1 .title-word:first-child{font:500 .22em/2 system-ui;text-transform:uppercase;l
 h1 .title-word:last-child{font:inherit;letter-spacing:inherit;text-transform:none}
 .letter{display:inline-block;position:relative;font-style:normal}
 .carrier{position:absolute;left:50%;top:100%;width:18px;height:28px;transform:translateX(-50%);font:16px/1 system-ui;letter-spacing:0;pointer-events:none}
+.title-word:last-child .carrier{scale:1.5;transform-origin:50% 0}
+.title-word:first-child{margin-bottom:1.5rem}
 .face,.shirt,.shoes{position:absolute;left:50%;translate:-50% 0}
 .face{top:0;z-index:1}
 .shirt{top:14px;width:10px;height:9px;border-radius:4px 4px 2px 2px;background:var(--shirt)}
@@ -88,6 +90,10 @@ h1 .title-word:last-child{font:inherit;letter-spacing:inherit;text-transform:non
 .polvo{position:absolute;left:50%;top:calc(100% + 26px);width:16px;height:6px;margin-left:-8px;border-radius:50%;background:#d9c2ab;opacity:0;pointer-events:none}
 #album{margin:3rem auto;max-width:38rem}
 #album h2{font-weight:400;font-size:2rem}
+.huecos,#photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:1rem}
+.hueco{aspect-ratio:4/3;display:grid;place-content:center;gap:.3rem;text-align:center;border:2px dashed #c9a99b;background:#fff8;color:#8a6677;font-style:italic;border-radius:2px}
+.hueco span{font-size:1.6rem;font-style:normal}
+#photos:empty{display:none}
 #photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:1rem}
 #photos button{cursor:zoom-in;background:white;padding:.45rem;border:0;box-shadow:0 4px 16px #40263222}
 #photos img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border:0;box-shadow:none}
@@ -98,7 +104,7 @@ dialog button,#album label{font:inherit;color:#684355;cursor:pointer}
 dialog button{margin:.6rem .25rem 0}
 #album label{display:block;margin:1rem 0 .5rem}
 #album input{max-width:100%}
-@media(prefers-reduced-motion:reduce){.carrier{display:none}}
+@media(prefers-reduced-motion:reduce){html:not(.forzar) .carrier{display:none}}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
 <div class="scene" id="scene">
@@ -111,8 +117,10 @@ dialog button{margin:.6rem .25rem 0}
 <p>Qué bonito poder llamarte licenciada, hermana. Me alegra muchísimo verte llegar a este día y me siento muy orgulloso de ti. Te quiero mucho.</p>
 <p>Un abrazo de tu hermano,<br><em>Robert</em></p></article>
 <button class="guardar" id="guardar" type="button">Guardar la carta</button></div></div></div>
-<section id="album" aria-labelledby="album-title" hidden>
-<h2 id="album-title">Nuestros recuerdos</h2><div id="photos"></div>
+<section id="album" aria-labelledby="album-title">
+<h2 id="album-title">Nuestros recuerdos</h2>
+<div id="photos"></div>
+<div id="vacio" class="huecos" aria-hidden="true"><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div></div>
 <label for="local-photos" hidden>Ver fotos de este dispositivo</label>
 <input id="local-photos" type="file" accept="image/*" multiple hidden>
 </section>
@@ -132,7 +140,7 @@ function polvo(letter) {
 }
 function assembleTitle() {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  if (reduced.matches || !Element.prototype.animate) return;
+  if ((reduced.matches && location.hash !== '#animar') || !Element.prototype.animate) return;
   const title = document.querySelector('h1');
   const words = title.textContent.trim().split(/\s+/);
   title.setAttribute('aria-label', words.join(' '));
@@ -248,7 +256,7 @@ function showPhoto(index) {
 }
 function addPhoto(src, name, pie) {
   const index = photos.length;
-  document.getElementById('album').hidden = false;
+  document.getElementById('vacio').hidden = true;
   const alt = pie || name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
   photos.push({src, alt});
   const thumb = new Image();
