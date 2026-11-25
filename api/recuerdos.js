@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const enabled = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  const token = process.env.KATHLEEN_READ_WRITE_TOKEN;
+  const enabled = Boolean(token);
   if (req.method === 'GET') return res.json({ enabled });
   if (req.method !== 'POST') return res.status(405).end();
   if (!enabled) return res.status(503).end();
@@ -20,9 +21,9 @@ export default async function handler(req, res) {
       .jpeg({ quality: 85 }).toBuffer();
   } catch { return res.status(422).end(); }
   try {
-    await put('pendientes/' + randomUUID() + '.jpg', foto, { access: 'private', contentType: 'image/jpeg' });
+    await put('pendientes/' + randomUUID() + '.jpg', foto, { token, access: 'private', contentType: 'image/jpeg' });
     return res.status(201).json({ recibida: true });
-   } catch (error) {
+  } catch (error) {
     const message = String(error?.message || '');
     let reason = 'BLOB_WRITE_FAILED';
     if (/private.{0,80}public|public.{0,80}private/i.test(message)) reason = 'BLOB_ACCESS_MODE';
