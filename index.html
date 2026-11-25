@@ -8,27 +8,53 @@ body{margin:0;background:#faf4e9;color:#44283c;font-family:"Baskervville",Georgi
 main{max-width:48rem;margin:auto;text-align:center;padding:clamp(2rem,7vw,5rem) 1.25rem}
 h1{font-weight:400;font-size:clamp(3.5rem,11vw,7rem);letter-spacing:-.065em;line-height:.95;margin:.35em 0 .65em}
 h1 span{display:block;font:500 .22em/2 system-ui;text-transform:uppercase;letter-spacing:.27em}
-details{max-width:32rem;margin:auto}
+details{position:relative;isolation:isolate;max-width:32rem;margin:auto}
 summary{list-style:none;cursor:pointer;padding:2rem 0 1rem;color:#684355}
 summary::-webkit-details-marker{display:none}
 .envelope{display:block;position:relative;width:min(76vw,20rem);aspect-ratio:1.65;margin:auto auto 1.4rem;background:#a36470;perspective:800px;box-shadow:0 10px 22px #50334426}
-.envelope:before,.envelope:after,.sheet{content:"";position:absolute;inset:0}
-.sheet{inset:6% 6% 3%;background:repeating-linear-gradient(#fff8e8 0 17px,#e3d2b9 18px,#fff8e8 19px)}
+.envelope:before,.envelope:after{content:"";position:absolute;inset:0}
 .envelope:before{background:linear-gradient(28deg,#ce9297,#dfacaa);clip-path:polygon(0 0,50% 62%,100% 0,100% 100%,0 100%);z-index:2}
 .envelope:after{background:#e8bcbb;clip-path:polygon(0 0,100% 0,50% 65%);transform-origin:top;z-index:3}
 .seal{position:absolute;z-index:4;left:50%;top:52%;transform:translate(-50%,-50%);border-radius:50%;background:#80384b;color:#fff1d5;padding:.45em .62em;box-shadow:0 2px 4px #60334055}
-details[open] .envelope:after{transform:rotateX(165deg);transition:transform .55s}
-details[open] .seal,details[open] .open-label,details:not([open]) .close-label{display:none}
-details[open] .sheet{transform:translateY(-28%);transition:transform .6s .38s}
-article{text-align:left;background:#fffaf0;padding:clamp(1.4rem,6vw,3rem);border:1px solid #d9c6b3;box-shadow:0 8px 22px #58402b0f;font-size:1.16rem;line-height:1.65;transform-origin:top;animation:unfold .75s .45s backwards}
-@keyframes unfold{from{opacity:0;transform:perspective(650px) rotateX(-30deg) translateY(-18px)}}
+details[open] summary{padding:0}
+details[open] .envelope{
+  position:absolute;top:2rem;left:0;right:0;z-index:2;
+  pointer-events:none;transform-origin:65% 50%;
+  animation:fall-away .82s .84s cubic-bezier(.55,.02,.88,.44) both;
+}
+details[open] .envelope:after{
+  transform:rotateX(155deg);
+  transition:transform .52s ease-in-out;
+}
+details[open] .seal{opacity:0;transition:opacity .2s}
+details[open] .open-label,details:not([open]) .close-label{display:none}
+.close-label{display:block;margin:1rem auto 0;text-decoration:underline;text-underline-offset:.22em}
+details[open]{display:flex;flex-direction:column}
+details[open] summary{order:1}
+article{
+  text-align:left;background:#fffaf0;padding:clamp(1.4rem,6vw,3rem);
+  border:1px solid #d9c6b3;box-shadow:0 8px 22px #58402b0f;
+  font-size:1.16rem;line-height:1.65;transform-origin:top center;
+  animation:draw-letter 1.2s .36s cubic-bezier(.22,.65,.3,1) both;
+}
+@keyframes draw-letter{
+  from{opacity:0;transform:translateY(4rem) scale(.54);clip-path:inset(0 0 78%)}
+  42%{opacity:1;transform:translateY(-1.5rem) scale(.66);clip-path:inset(0 0 52%)}
+  to{opacity:1;transform:none;clip-path:inset(0)}
+}
+@keyframes fall-away{
+  from{opacity:1;transform:none}
+  35%{opacity:1;transform:translateY(1.4rem) rotate(5deg)}
+  to{opacity:0;visibility:hidden;transform:translateY(12rem) rotate(18deg)}
+}
+@media(prefers-reduced-motion:reduce){details[open] .envelope{visibility:hidden}}
 figure{margin:2.5rem auto}img{max-width:100%;border:9px solid white;box-shadow:0 4px 16px #40263222}
 footer{margin:3.4rem auto 0;max-width:27rem;font-size:1.45rem;font-style:italic;line-height:1.4}
 footer:before{content:"✧";display:block;color:#976c52;margin-bottom:.7rem}
 @media(prefers-reduced-motion:reduce){*,*:after{animation:none!important;transition:none!important}}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
-<details><summary><span class="envelope" aria-hidden="true"><i class="sheet"></i><i class="seal">K</i></span><span class="open-label">Toca el sobre para abrir tu carta</span><span class="close-label">Cerrar la carta</span></summary>
+<details><summary><span class="envelope" aria-hidden="true"><i class="seal">K</i></span><span class="open-label">Toca el sobre para abrir tu carta</span><span class="close-label">Cerrar la carta</span></summary>
 <article><strong>Kathleen,</strong>
 <p>Mientras escogía las fotos para tu video, pensaba en qué decirte cuando se acabara la música. Al final quise dejarte esto por escrito para que lo puedas volver a leer cuando quieras.</p>
 <p>Qué bonito poder llamarte licenciada, hermana. Me alegra muchísimo verte llegar a este día y me siento muy orgulloso de ti. Te quiero mucho.</p>
