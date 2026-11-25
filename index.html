@@ -105,6 +105,9 @@ dialog button{margin:.6rem .25rem 0}
 #album label{display:block;margin:1rem 0 .5rem}
 #album input{max-width:100%}
 @media(prefers-reduced-motion:reduce){html:not(.forzar) .carrier{display:none}}
+#aporte{margin:2rem auto;padding:1.3rem;border:1px solid #d9c6b3;border-radius:1rem;background:#fffaf0}
+#aporte input{display:block;max-width:100%;margin:1rem auto}
+#aporte button{padding:.7rem 1.2rem;background:#763b50;color:white;border:0;border-radius:2rem;cursor:pointer}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
 <div class="scene" id="scene">
@@ -121,6 +124,13 @@ dialog button{margin:.6rem .25rem 0}
 <h2 id="album-title">Nuestros recuerdos</h2>
 <div id="photos"></div>
 <div id="vacio" class="huecos" aria-hidden="true"><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div></div>
+<form id="aporte" hidden>
+<h3>Comparte un recuerdo de Kathleen</h3>
+<p>Elige una foto. Robert podrá verla y agregarla al álbum.</p>
+<input type="file" accept="image/*" required aria-label="Elegir una foto para Robert">
+<button type="submit">Enviar foto</button>
+<p role="status" aria-live="polite"></p>
+</form>
 <label for="local-photos" hidden>Ver fotos de este dispositivo</label>
 <input id="local-photos" type="file" accept="image/*" multiple hidden>
 </section>
@@ -243,6 +253,43 @@ function petalos(){
   }
 }
 
+const aporte = document.getElementById('aporte');
+fetch('/api/recuerdos').then(r => r.json()).then(config => { aporte.hidden = !config.enabled; }).catch(() => {});
+aporte.addEventListener('submit', async event => {
+  event.preventDefault();
+  const picker = aporte.querySelector('input');
+  const button = aporte.querySelector('button');
+  const status = aporte.querySelector('[role=status]');
+  const file = picker.files[0];
+  if (!file || button.disabled) return;
+  button.disabled = picker.disabled = true;
+  let bitmap;
+  let sending = false;
+  try {
+    status.textContent = 'Preparando tu foto…';
+    bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const foto = canvas.toDataURL('image/jpeg', .82).split(',')[1];
+    sending = true;
+    status.textContent = 'Enviando tu recuerdo…';
+    const response = await fetch('/api/recuerdos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ foto })});
+    if (!response.ok) throw new Error('upload');
+    aporte.reset();
+    status.textContent = '¡Gracias! Robert recibió tu foto.';
+  } catch {
+    status.textContent = sending ? 'No pudimos confirmar el envío. Inténtalo de nuevo.' : 'No pudimos abrir esa imagen. Prueba con una foto JPG o PNG.';
+  } finally {
+    bitmap?.close();
+    button.disabled = picker.disabled = false;
+  }
+});
 const photos = [];
 const gallery = document.getElementById('photos');
 const viewer = document.getElementById('viewer');
