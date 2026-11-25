@@ -22,5 +22,13 @@ export default async function handler(req, res) {
   try {
     await put('pendientes/' + randomUUID() + '.jpg', foto, { access: 'private', contentType: 'image/jpeg' });
     return res.status(201).json({ recibida: true });
-  } catch { return res.status(503).end(); }
+   } catch (error) {
+    const message = String(error?.message || '');
+    let reason = 'BLOB_WRITE_FAILED';
+    if (/private.{0,80}public|public.{0,80}private/i.test(message)) reason = 'BLOB_ACCESS_MODE';
+    else if (/unauthorized|forbidden|denied|token/i.test(message)) reason = 'BLOB_PERMISSION';
+    else if (/quota|limit|suspended/i.test(message)) reason = 'BLOB_LIMIT';
+    console.error('Upload failed', reason, error?.name);
+    return res.status(503).json({ error: reason });
+  }
 }
