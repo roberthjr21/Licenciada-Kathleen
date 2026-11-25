@@ -32,6 +32,34 @@ figure{margin:2.5rem auto}img{max-width:100%;border:9px solid white;box-shadow:0
 footer{margin:3.4rem auto 0;max-width:27rem;font-size:1.45rem;font-style:italic;line-height:1.4}
 footer:before{content:"✧";display:block;color:#976c52;margin-bottom:.7rem}
 @media(prefers-reduced-motion:reduce){*,*:after{animation:none!important;transition:none!important}}
+
+main{overflow-x:clip}
+.title-word{display:block;white-space:nowrap}
+h1 .title-word:first-child{font:500 .22em/2 system-ui;text-transform:uppercase;letter-spacing:.27em}
+h1 .title-word:last-child{font:inherit;letter-spacing:inherit;text-transform:none}
+.letter{display:inline-block;position:relative;font-style:normal}
+.carrier{position:absolute;left:50%;top:100%;width:18px;height:28px;transform:translateX(-50%);font:16px/1 system-ui;letter-spacing:0;pointer-events:none}
+.face,.shirt,.shoes{position:absolute;left:50%;translate:-50% 0}
+.face{top:0;z-index:1}
+.shirt{top:14px;width:10px;height:9px;border-radius:4px 4px 2px 2px;background:var(--shirt)}
+.shirt:before,.shirt:after{content:"";position:absolute;top:-6px;width:3px;height:10px;border-radius:3px;background:var(--shirt);transform-origin:bottom}
+.shirt:before{left:0;transform:rotate(-30deg)}
+.shirt:after{right:0;transform:rotate(30deg)}
+.shoes{top:22px;width:9px;height:5px;border-inline:3px solid #593e43;animation:steps .18s alternate infinite}
+@keyframes steps{to{transform:skewX(25deg) translateY(-1px)}}
+#album{margin:3rem auto;max-width:38rem}
+#album h2{font-weight:400;font-size:2rem}
+#photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:1rem}
+#photos button{cursor:zoom-in;background:white;padding:.45rem;border:0;box-shadow:0 4px 16px #40263222}
+#photos img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border:0;box-shadow:none}
+dialog{background:#fffaf0;color:inherit;border:0;padding:1rem;max-width:min(94vw,54rem);text-align:center}
+dialog::backdrop{background:#301e28c9}
+dialog img{display:block;max-height:72vh;margin:auto;object-fit:contain}
+dialog button,#album label{font:inherit;color:#684355;cursor:pointer}
+dialog button{margin:.6rem .25rem 0}
+#album label{display:block;margin:1rem 0 .5rem}
+#album input{max-width:100%}
+@media(prefers-reduced-motion:reduce){.carrier{display:none}}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
 <details><summary><span class="envelope" aria-hidden="true"><i class="sheet"></i><i class="seal">K</i></span><span class="open-label">Toca el sobre para abrir tu carta</span><span class="close-label">Cerrar la carta</span></summary>
@@ -39,89 +67,116 @@ footer:before{content:"✧";display:block;color:#976c52;margin-bottom:.7rem}
 <p>Mientras escogía las fotos para tu video, pensaba en qué decirte cuando se acabara la música. Al final quise dejarte esto por escrito para que lo puedas volver a leer cuando quieras.</p>
 <p>Qué bonito poder llamarte licenciada, hermana. Me alegra muchísimo verte llegar a este día y me siento muy orgulloso de ti. Te quiero mucho.</p>
 <p>Un abrazo de tu hermano,<br><em>Robert</em></p></article></details>
-<section id="album" aria-label="Fotos de nosotros" hidden><h2>Nosotros</h2></section>
+<section id="album" aria-labelledby="album-title">
+<h2 id="album-title">Nuestros recuerdos</h2><div id="photos"></div>
+<label for="local-photos">Ver fotos de este dispositivo</label>
+<input id="local-photos" type="file" accept="image/*" multiple>
+</section>
+<dialog id="viewer" aria-label="Foto ampliada"><img alt=""><div>
+<button type="button" id="previous">Anterior</button>
+<button type="button" id="dismiss" autofocus>Cerrar</button>
+<button type="button" id="next">Siguiente</button></div></dialog>
 <footer>De todos los nombres que tienes, mi favorito siempre va a ser «mi hermana».</footer>
 </main>
 
 <script>
-const scene = document.getElementById('scene');
-const env = scene.querySelector('.env');
-const envWrap = document.getElementById('envWrap');
-const cartaWrap = document.getElementById('cartaWrap');
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let temporizador;
-
-function abrir() {
-  clearTimeout(temporizador);
-  scene.classList.add('open');
-  env.setAttribute('aria-expanded', 'true');
-  if (!reduce) petalos();
-  temporizador = setTimeout(() => {
-    scene.classList.add('read');
-    document.body.classList.add('read');
-    envWrap.inert = true;
-    cartaWrap.inert = false;
-    cartaWrap.removeAttribute('aria-hidden');
-    cartaWrap.focus({ preventScroll: true });
-  }, reduce ? 0 : 1400);
-}
-
-function cerrar() {
-  clearTimeout(temporizador);
-  scene.classList.remove('read');
-  document.body.classList.remove('read');
-  envWrap.inert = false;
-  cartaWrap.inert = true;
-  cartaWrap.setAttribute('aria-hidden', 'true');
-  env.setAttribute('aria-expanded', 'false');
-  temporizador = setTimeout(() => scene.classList.remove('open'), reduce ? 0 : 700);
-  env.focus({ preventScroll: true });
-}
-
-// Toda la zona del sobre (incluido el texto) abre la carta; ignora toques repetidos mientras anima.
-envWrap.addEventListener('click', () => { if (!scene.classList.contains('open')) abrir(); });
-document.getElementById('guardar').addEventListener('click', cerrar);
-
-function petalos() {
-  for (let i = 0; i < 16; i++) {
-    const p = document.createElement('i');
-    p.className = 'petalo';
-    p.style.left = Math.random() * 100 + 'vw';
-    p.style.setProperty('--s', (.6 + Math.random() * .6) + 'rem');
-    p.style.setProperty('--x', (Math.random() * 12 - 6) + 'rem');
-    p.style.setProperty('--d', (6 + Math.random() * 4) + 's');
-    p.style.setProperty('--r', (Math.random() * 1.8) + 's');
-    document.body.append(p);
-    setTimeout(() => p.remove(), 11000);
+function assembleTitle() {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduced.matches || !Element.prototype.animate) return;
+  const title = document.querySelector('h1');
+  const words = title.textContent.trim().split(/\s+/);
+  title.setAttribute('aria-label', words.join(' '));
+  title.replaceChildren();
+  const letters = [];
+  for (const word of words) {
+    const row = document.createElement('span');
+    row.className = 'title-word';
+    row.setAttribute('aria-hidden', 'true');
+    title.append(row);
+    for (const character of word) {
+      const letter = document.createElement('i');
+      letter.className = 'letter';
+      letter.textContent = character;
+      row.append(letter);
+      letters.push(letter);
+    }
   }
+  const faces = ['👧🏽','👦🏻','👧🏿','👦🏽'];
+  letters.forEach((letter, index) => {
+    const actor = document.createElement('i');
+    actor.className = 'carrier';
+    actor.style.setProperty('--shirt', ['#977692','#61948a','#c37e54','#7089ac'][index % 4]);
+    actor.innerHTML = '<b class="face"></b><b class="shirt"></b><b class="shoes"></b>';
+    actor.firstElementChild.textContent = faces[index % 4];
+    letter.append(actor);
+    const rect = letter.getBoundingClientRect();
+    const distance = index % 2 ? innerWidth - rect.left + 32 : -rect.right - 32;
+    const delay = index * 140;
+    const travel = letter.animate([
+      {transform:'translate(' + distance + 'px,32px)', opacity:0},
+      {opacity:1, offset:.18},
+      {transform:'translate(0,5px)', offset:.86},
+      {transform:'translate(0,0)'}
+    ], {duration:1100, delay, easing:'ease-out', fill:'backwards'});
+    const leave = actor.animate([
+      {transform:'translateX(-50%)',opacity:1},
+      {transform:'translate(' + distance + 'px,32px)',opacity:0}
+    ], {duration:570, delay:delay+1100, easing:'ease-in'});
+    leave.onfinish = () => actor.remove();
+    reduced.addEventListener('change', () => {
+      if (reduced.matches) { travel.cancel(); leave.cancel(); actor.remove(); }
+    }, {once:true});
+  });
 }
+assembleTitle();
 
-// Cada recuerdo: ruta de la foto, descripción (para accesibilidad) y, si quieres, un pie de foto.
-// Ejemplo: { ruta: 'fotos/graduacion.jpg', descripcion: 'Kathleen con su toga', pie: 'El gran día' }
-const recuerdos = [];
-
-const album = document.getElementById('album');
-const observador = new IntersectionObserver((entradas) => {
-  for (const e of entradas) if (e.isIntersecting) { e.target.classList.add('visto'); observador.unobserve(e.target); }
-}, { threshold: .2 });
-
-recuerdos.forEach((recuerdo, i) => {
-  const foto = new Image();
-  foto.src = recuerdo.ruta;
-  foto.alt = recuerdo.descripcion;
-  foto.loading = 'lazy';
-  foto.decoding = 'async';
-  const marco = document.createElement('figure');
-  marco.style.setProperty('--giro', (i % 2 ? 1.2 : -1.2) + 'deg');
-  marco.append(foto);
-  if (recuerdo.pie) {
-    const pie = document.createElement('figcaption');
-    pie.textContent = recuerdo.pie;
-    marco.append(pie);
-  }
-  foto.onerror = () => marco.remove();
-  album.append(marco);
-  observador.observe(marco);
+const photos = [];
+const gallery = document.getElementById('photos');
+const viewer = document.getElementById('viewer');
+const fullPhoto = viewer.querySelector('img');
+let selected = 0;
+function showPhoto(index) {
+  selected = (index + photos.length) % photos.length;
+  fullPhoto.src = photos[selected].src;
+  fullPhoto.alt = photos[selected].alt;
+  for (const id of ['previous','next']) document.getElementById(id).hidden = photos.length < 2;
+}
+function addPhoto(src, name) {
+  const index = photos.length;
+  const alt = name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+  photos.push({src, alt});
+  const thumb = new Image();
+  thumb.alt = alt;
+  thumb.loading = 'lazy';
+  thumb.src = src;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.setAttribute('aria-label','Ampliar foto: ' + alt);
+  button.append(thumb);
+  button.onclick = () => { showPhoto(index); viewer.showModal(); };
+  gallery.append(button);
+}
+document.getElementById('previous').onclick = () => showPhoto(selected - 1);
+document.getElementById('next').onclick = () => showPhoto(selected + 1);
+document.getElementById('dismiss').onclick = () => viewer.close();
+viewer.addEventListener('keydown', event => {
+  if (event.key === 'ArrowRight') showPhoto(selected + 1);
+  if (event.key === 'ArrowLeft') showPhoto(selected - 1);
 });
-album.hidden = recuerdos.length === 0;
+document.getElementById('local-photos').onchange = event => {
+  for (const file of event.target.files) if (file.type.startsWith('image/')) addPhoto(URL.createObjectURL(file), file.name);
+  event.target.value = '';
+};
+// Coloca las fotos compartidas en la carpeta fotos/ de main.
+async function loadAlbum() {
+  const response = await fetch('https://api.github.com/repos/roberthjr21/Licenciada-Kathleen/contents/fotos?ref=main');
+  if (!response.ok) return;
+  const files = await response.json();
+  if (!Array.isArray(files)) return;
+  for (const file of files.sort((a,b) => a.name.localeCompare(b.name,'es',{numeric:true}))) {
+    if (file.type === 'file' && /\.(jpe?g|png|webp|gif|avif)$/i.test(file.name))
+      addPhoto('fotos/' + encodeURIComponent(file.name), file.name);
+  }
+}
+loadAlbum().catch(() => {});
 </script></body></html>
