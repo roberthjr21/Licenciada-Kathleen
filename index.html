@@ -347,9 +347,30 @@ async function loadAlbum() {
       addPhoto('fotos/' + encodeURIComponent(file.name), file.name);
   }
 }
-fetch('/api/recuerdos').then(r => r.json()).then(config => {
-  aporte.hidden = !config.enabled;
-  for (const url of config.photos || []) addPhoto(url, 'Recuerdo compartido');
-}).catch(() => {});
+const albumRefreshMs = 5000;
+let refreshTimer;
+let refreshing = false;
+
+async function syncSharedPhotos() {
+  clearTimeout(refreshTimer);
+  if (refreshing || document.hidden || !navigator.onLine) return;
+  refreshing = true;
+  let nextDelay = albumRefreshMs;
+  try {
+    const response = await fetch('/api/recuerdos', { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error('album');
+    const { enabled, photos: sharedPhotos } = await response.json();
+    aporte.hidden = !enabled;
+    for (const url of sharedPhotos || []) addPhoto(url, 'Recuerdo compartido');
+  } catch {
+    nextDelay = 15000;
+  } finally {
+    refreshing = false;
+    if (!document.hidden && navigator.onLine) refreshTimer = setTimeout(syncSharedPhotos, nextDelay);
+  }
+}
+document.addEventListener('visibilitychange', syncSharedPhotos);
+window.addEventListener('online', syncSharedPhotos);
+syncSharedPhotos();
 loadAlbum().catch(() => {});
 </script></body></html>
