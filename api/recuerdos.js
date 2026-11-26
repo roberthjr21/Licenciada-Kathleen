@@ -1,15 +1,31 @@
-import { put } from '@vercel/blob';
+import { list, put } from '@vercel/blob';
 import sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const token = process.env.KATHLEEN_READ_WRITE_TOKEN;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const prefix = 'licenciada-kathleen/album/';
   const enabled = Boolean(token);
-  if (req.method === 'GET') return res.json({ enabled });
+  if (req.method === 'GET') {
+    if (!enabled) return res.json({ enabled, photos: [] });
+    try {
+      const photos = [];
+      let cursor;
+      do {
+        const page = await list({ token, prefix, cursor });
+        photos.push(...page.blobs.map(blob => blob.url));
+        cursor = page.hasMore ? page.cursor : undefined;
+      } while (cursor);
+      return res.json({ enabled, photos });
+    } catch {
+      return res.status(503).json({ enabled, error: 'ALBUM_UNAVAILABLE' });
+    }
+  }
   if (req.method !== 'POST') return res.status(405).end();
   if (!enabled) return res.status(503).end();
   if (req.headers['content-type'] !== 'application/json') return res.status(415).end();
+  if (req.body?.publicar !== true) return res.status(409).json({ error: 'RELOAD_TO_PUBLISH' });
   const data = req.body?.foto;
   if (typeof data !== 'string' || data.length > 3500000) return res.status(400).end();
   let foto;
@@ -21,8 +37,8 @@ export default async function handler(req, res) {
       .jpeg({ quality: 85 }).toBuffer();
   } catch { return res.status(422).end(); }
   try {
-    await put('pendientes/' + randomUUID() + '.jpg', foto, { token, access: 'private', contentType: 'image/jpeg' });
-    return res.status(201).json({ recibida: true });
+    const blob = await put(prefix + randomUUID() + '.jpg', foto, { token, access: 'public', contentType: 'image/jpeg' });
+    return res.status(201).json({ recibida: true, url: blob.url });
   } catch (error) {
     const message = String(error?.message || '');
     let reason = 'BLOB_WRITE_FAILED';
