@@ -126,13 +126,11 @@ dialog button{margin:.6rem .25rem 0}
 <div id="vacio" class="huecos" aria-hidden="true"><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div></div>
 <form id="aporte" hidden>
 <h3>Comparte un recuerdo de Kathleen</h3>
-<p>Elige una foto. Robert podrá verla y agregarla al álbum.</p>
+<p>La foto que publiques aparecerá en el álbum y cualquier persona con el enlace podrá verla.</p>
 <input type="file" accept="image/*" required aria-label="Elegir una foto para Robert">
-<button type="submit">Enviar foto</button>
+<button type="submit">Publicar foto en el álbum</button>
 <p role="status" aria-live="polite"></p>
 </form>
-<label for="local-photos" hidden>Ver fotos de este dispositivo</label>
-<input id="local-photos" type="file" accept="image/*" multiple hidden>
 </section>
 <dialog id="viewer" aria-label="Foto ampliada"><img alt=""><div>
 <button type="button" id="previous">Anterior</button>
@@ -254,7 +252,7 @@ function petalos(){
 }
 
 const aporte = document.getElementById('aporte');
-fetch('/api/recuerdos').then(r => r.json()).then(config => { aporte.hidden = !config.enabled; }).catch(() => {});
+
 aporte.addEventListener('submit', async event => {
   event.preventDefault();
   const picker = aporte.querySelector('input');
@@ -279,10 +277,12 @@ aporte.addEventListener('submit', async event => {
     const foto = canvas.toDataURL('image/jpeg', .82).split(',')[1];
     sending = true;
     status.textContent = 'Enviando tu recuerdo…';
-    const response = await fetch('/api/recuerdos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ foto })});
+    const response = await fetch('/api/recuerdos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ foto, publicar: true })});
     if (!response.ok) throw new Error('upload');
+    const published = await response.json();
+    addPhoto(published.url, 'Recuerdo compartido');
     aporte.reset();
-    status.textContent = '¡Gracias! Robert recibió tu foto.';
+    status.textContent = '¡Tu foto ya aparece en el álbum de todos!';
   } catch {
     status.textContent = sending ? 'No pudimos confirmar el envío. Inténtalo de nuevo.' : 'No pudimos abrir esa imagen. Prueba con una foto JPG o PNG.';
   } finally {
@@ -302,6 +302,7 @@ function showPhoto(index) {
   for (const id of ['previous','next']) document.getElementById(id).hidden = photos.length < 2;
 }
 function addPhoto(src, name, pie) {
+  if (photos.some(photo => photo.src === src)) return;
   const index = photos.length;
   document.getElementById('vacio').hidden = true;
   const alt = pie || name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
@@ -332,11 +333,6 @@ viewer.addEventListener('touchend', e => {
   if (Math.abs(dx) > 50) showPhoto(selected + (dx < 0 ? 1 : -1));
 });
 viewer.addEventListener('click', e => { if (e.target === viewer) viewer.close(); });
-if (location.hash === '#probar') for (const el of ['album','local-photos']) document.getElementById(el).hidden = false, document.querySelector('label[for=local-photos]').hidden = false;
-document.getElementById('local-photos').onchange = event => {
-  for (const file of event.target.files) if (file.type.startsWith('image/')) addPhoto(URL.createObjectURL(file), file.name);
-  event.target.value = '';
-};
 // Coloca las fotos compartidas en la carpeta fotos/ de main.
 // Opcional: lista tus fotos aquí para no depender de la API de GitHub. Ej: {archivo:'graduacion.jpg', pie:'El gran día'}
 const recuerdos = [];
@@ -351,5 +347,9 @@ async function loadAlbum() {
       addPhoto('fotos/' + encodeURIComponent(file.name), file.name);
   }
 }
+fetch('/api/recuerdos').then(r => r.json()).then(config => {
+  aporte.hidden = !config.enabled;
+  for (const url of config.photos || []) addPhoto(url, 'Recuerdo compartido');
+}).catch(() => {});
 loadAlbum().catch(() => {});
 </script></body></html>
