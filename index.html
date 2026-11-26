@@ -108,6 +108,9 @@ dialog button{margin:.6rem .25rem 0}
 #aporte{margin:2rem auto;padding:1.3rem;border:1px solid #d9c6b3;border-radius:1rem;background:#fffaf0}
 #aporte input{display:block;max-width:100%;margin:1rem auto}
 #aporte button{padding:.7rem 1.2rem;background:#763b50;color:white;border:0;border-radius:2rem;cursor:pointer}
+#dedicatoria{display:block;max-width:100%;width:24rem;margin:.5rem auto;padding:.65rem;font:inherit}
+#photo-message{white-space:pre-wrap;overflow-wrap:anywhere}
+dialog img{max-width:100%;max-height:57dvh}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
 <div class="scene" id="scene">
@@ -128,11 +131,14 @@ dialog button{margin:.6rem .25rem 0}
 <h3>Comparte un recuerdo de Kathleen</h3>
 <p>La foto que publiques aparecerá en el álbum y cualquier persona con el enlace podrá verla.</p>
 <input type="file" accept="image/*" required aria-label="Elegir una foto para Robert">
+<label for="dedicatoria">Mensaje opcional</label>
+<textarea id="dedicatoria" maxlength="120" rows="2" placeholder="Escribe un recuerdo para Kathleen"></textarea>
+<p>Podrás retirar tu foto desde este navegador mientras conserves los datos del sitio.</p>
 <button type="submit">Publicar foto en el álbum</button>
 <p role="status" aria-live="polite"></p>
 </form>
 </section>
-<dialog id="viewer" aria-label="Foto ampliada"><img alt=""><div>
+<dialog id="viewer" aria-label="Foto ampliada"><img alt=""><p id="photo-message"></p><div><a id="download-photo" download>Descargar foto</a><button type="button" id="remove-photo" hidden>Retirar mi foto</button><p id="photo-feedback" role="status"></p>
 <button type="button" id="previous">Anterior</button>
 <button type="button" id="dismiss" autofocus>Cerrar</button>
 <button type="button" id="next">Siguiente</button></div></dialog>
@@ -261,6 +267,7 @@ aporte.addEventListener('submit', async event => {
   const file = picker.files[0];
   if (!file || button.disabled) return;
   button.disabled = picker.disabled = true;
+  const message = document.getElementById('dedicatoria').value.trim();
   let bitmap;
   let sending = false;
   try {
@@ -275,12 +282,17 @@ aporte.addEventListener('submit', async event => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const foto = canvas.toDataURL('image/jpeg', .82).split(',')[1];
+    const key = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2,'0')).join('');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
+    const hash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2,'0')).join('');
+    try { localStorage.setItem('kathleen-owner-' + hash, key); }
+    catch { status.textContent = 'Permite guardar datos en este navegador para poder retirar tu foto después.'; return; }
     sending = true;
     status.textContent = 'Enviando tu recuerdo…';
-    const response = await fetch('/api/recuerdos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ foto, publicar: true })});
+    const response = await fetch('/api/recuerdos', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ foto, publicar: true, key, message })});
     if (!response.ok) throw new Error('upload');
     const published = await response.json();
-    addPhoto(published.url, 'Recuerdo compartido');
+    addPhoto(published.url, 'Recuerdo compartido', message, true);
     aporte.reset();
     status.textContent = '¡Tu foto ya aparece en el álbum de todos!';
   } catch {
@@ -298,15 +310,47 @@ let selected = 0;
 function showPhoto(index) {
   selected = (index + photos.length) % photos.length;
   fullPhoto.src = photos[selected].src;
-  fullPhoto.alt = photos[selected].alt;
+  const photo = photos[selected];
+  fullPhoto.alt = photo.alt;
+  document.getElementById('photo-message').textContent = photo.message;
+  const download = document.getElementById('download-photo');
+  download.href = photo.shared ? photo.src + '?download=1' : photo.src;
+  document.getElementById('remove-photo').hidden = !ownerKey(photo);
+  document.getElementById('photo-feedback').textContent = '';
   for (const id of ['previous','next']) document.getElementById(id).hidden = photos.length < 2;
 }
-function addPhoto(src, name, pie) {
+function ownerKey(photo) {
+  if (!photo.shared) return null;
+  const parts = new URL(photo.src).pathname.split('/');
+  if (parts.at(-4) !== 'v2') return null;
+  try { return localStorage.getItem('kathleen-owner-' + parts.at(-2)); } catch { return null; }
+}
+function removeFromGallery(photo) {
+  const current = photos[selected];
+  const index = photos.indexOf(photo);
+  if (index < 0) return;
+  photos.splice(index, 1);
+  photo.button.remove();
+  if (viewer.open && current === photo) viewer.close();
+  selected = Math.max(0, photos.indexOf(current));
+}
+document.getElementById('remove-photo').onclick = async () => {
+  const photo = photos[selected];
+  const key = ownerKey(photo);
+  if (!key || !confirm('¿Retirar esta foto y su mensaje del álbum de todos?')) return;
+  try {
+    const path = new URL(photo.src).pathname.split('/').slice(-4).join('/');
+    const response = await fetch('/api/recuerdos', {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path,key})});
+    if (!response.ok) throw new Error('delete');
+    removeFromGallery(photo);
+  } catch { document.getElementById('photo-feedback').textContent = 'No se pudo retirar la foto. Inténtalo de nuevo.'; }
+};
+function addPhoto(src, name, pie, shared = false) {
   if (photos.some(photo => photo.src === src)) return;
-  const index = photos.length;
+
   document.getElementById('vacio').hidden = true;
   const alt = pie || name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
-  photos.push({src, alt});
+
   const thumb = new Image();
   thumb.alt = alt;
   thumb.loading = 'lazy';
@@ -315,7 +359,9 @@ function addPhoto(src, name, pie) {
   button.type = 'button';
   button.setAttribute('aria-label','Ampliar foto: ' + alt);
   button.append(thumb);
-  button.onclick = () => { showPhoto(index); viewer.showModal(); };
+  const photo = {src, alt, message: pie || '', shared, button};
+  photos.push(photo);
+  button.onclick = () => { showPhoto(photos.indexOf(photo)); viewer.showModal(); };
   gallery.append(button);
 }
 document.getElementById('previous').onclick = () => showPhoto(selected - 1);
@@ -359,9 +405,13 @@ async function syncSharedPhotos() {
   try {
     const response = await fetch('/api/recuerdos', { cache: 'no-store', signal: AbortSignal.timeout(15000) });
     if (!response.ok) throw new Error('album');
-    const { enabled, photos: sharedPhotos } = await response.json();
+    const { enabled, photos: sharedPhotos, captions = {} } = await response.json();
     aporte.hidden = !enabled;
-    for (const url of sharedPhotos || []) addPhoto(url, 'Recuerdo compartido');
+    if (Array.isArray(sharedPhotos)) {
+      const urls = new Set(sharedPhotos);
+      for (const photo of [...photos]) if (photo.shared && !urls.has(photo.src)) removeFromGallery(photo);
+      for (const url of urls) addPhoto(url, 'Recuerdo compartido', captions[url], true);
+    }
   } catch {
     nextDelay = 15000;
   } finally {
