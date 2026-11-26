@@ -1,0 +1,57 @@
+name: Verificar seguridad del álbum
+on:
+  push:
+    branches: [verificar-seguridad-album]
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolver dependencias y revisar avisos
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          echo LOCK_START
+          gzip -c package-lock.json | base64 -w0
+          echo
+          echo LOCK_END
+          npm audit --omit=dev
+      - name: Revisar la publicación y retirada en producción
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64, json, secrets, urllib.request as u, urllib.error as err, time, subprocess
+          base='https://licenciada-kathleen.vercel.app'
+          def call(method, body=None):
+              req=u.Request(base+'/api/recuerdos',method=method,data=json.dumps(body).encode() if body else None,headers={'Content-Type':'application/json'})
+              try:
+                  with u.urlopen(req,timeout=18) as r: return r.status,r.read()
+              except err.HTTPError as e:return e.code,e.read()
+          for i in range(18):
+              with u.urlopen(base,timeout=15) as r:
+                  if "frame-ancestors 'none'" in r.headers.get('Content-Security-Policy',''):break
+              time.sleep(5)
+          else: raise RuntimeError('Falta el despliegue protegido')
+          print('Cabeceras de seguridad activas',flush=True)
+          jpeg=subprocess.check_output(['convert','-size','32x24','xc:ivory','jpg:-'])
+          key=secrets.token_hex(32)
+          status,body=call('POST',dict(foto=base64.b64encode(jpeg).decode(),publicar=True,key=key,message='Control de publicación'))
+          assert status==201,(status,body)
+          url=json.loads(body)['url'];path=url.split('/licenciada-kathleen/album/')[1]
+          try:
+              assert path.startswith('v3/') and path.endswith('/recuerdo.jpg')
+              assert call('DELETE',dict(path=path,key=secrets.token_hex(32)))[0]==403
+              for i in range(8):
+                  config=json.loads(call('GET')[1])
+                  if config.get('captions',{}).get(url)=='Control de publicación':break
+                  time.sleep(2)
+              else:raise RuntimeError('Falta la dedicatoria')
+              print('Foto y dedicatoria verificadas. Retirada ajena denegada.',flush=True)
+          finally:
+              status,body=call('DELETE',dict(path=path,key=key)); assert status==204,(status,body)
+          print('Foto de prueba retirada por su autor.',flush=True)
+          PY
