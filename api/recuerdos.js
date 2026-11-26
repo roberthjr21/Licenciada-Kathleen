@@ -10,12 +10,19 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!enabled) return res.json({ enabled, photos: [] });
     try {
+      const retired = new Set([
+        "009321f0-a621-4de8-9995-b28c14ce0e08.jpg",
+        "a121a611-844f-429e-9067-a3ed261e6984.jpg",
+        "b7d900c5-e5d5-4987-be9f-300470708205.jpg",
+        "ceecc02d-5c1b-4d94-8d57-07867e66e24a.jpg"
+].map(name => prefix + name));
       const photos = [];
       const captions = {};
       let cursor;
       do {
         const page = await list({ token, prefix, cursor });
         for (const blob of page.blobs) {
+          if (retired.has(blob.pathname)) continue;
           photos.push(blob.url);
           const parts = blob.pathname.slice(prefix.length).split('/');
           if (parts[0] === 'v2' && parts.length === 4) {
