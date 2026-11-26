@@ -111,6 +111,8 @@ dialog button{margin:.6rem .25rem 0}
 #dedicatoria{display:block;max-width:100%;width:24rem;margin:.5rem auto;padding:.65rem;font:inherit}
 #photo-message{white-space:pre-wrap;overflow-wrap:anywhere}
 dialog img{max-width:100%;max-height:57dvh}
+#photos > div > button:first-child{width:100%}
+#photos .withdraw-photo{display:block;margin:.4rem auto;cursor:pointer;padding:.65rem 1rem;color:#763b50}
 </style></head><body><main>
 <h1><span>Licenciada</span> Kathleen</h1>
 <div class="scene" id="scene">
@@ -125,7 +127,7 @@ dialog img{max-width:100%;max-height:57dvh}
 <button class="guardar" id="guardar" type="button">Guardar la carta</button></div></div></div>
 <section id="album" aria-labelledby="album-title">
 <h2 id="album-title">Nuestros recuerdos</h2>
-<div id="photos"></div>
+<p id="album-feedback" role="status"></p><div id="photos"></div>
 <div id="vacio" class="huecos" aria-hidden="true"><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div><div class="hueco"><span>📷</span>Aquí va una foto</div></div>
 <form id="aporte" hidden>
 <h3>Comparte un recuerdo de Kathleen</h3>
@@ -330,12 +332,12 @@ function removeFromGallery(photo) {
   const index = photos.indexOf(photo);
   if (index < 0) return;
   photos.splice(index, 1);
-  photo.button.remove();
+  photo.tile.remove();
   if (viewer.open && current === photo) viewer.close();
   selected = Math.max(0, photos.indexOf(current));
 }
-document.getElementById('remove-photo').onclick = async () => {
-  const photo = photos[selected];
+document.getElementById('remove-photo').onclick = () => withdrawPhoto(photos[selected]);
+async function withdrawPhoto(photo) {
   const key = ownerKey(photo);
   if (!key || !confirm('¿Retirar esta foto y su mensaje del álbum de todos?')) return;
   try {
@@ -343,7 +345,8 @@ document.getElementById('remove-photo').onclick = async () => {
     const response = await fetch('/api/recuerdos', {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path,key})});
     if (!response.ok) throw new Error('delete');
     removeFromGallery(photo);
-  } catch { document.getElementById('photo-feedback').textContent = 'No se pudo retirar la foto. Inténtalo de nuevo.'; }
+  } catch { const feedback = viewer.open ? document.getElementById('photo-feedback') : document.getElementById('album-feedback');
+    feedback.textContent = 'No se pudo retirar la foto. Inténtalo de nuevo.'; }
 };
 function addPhoto(src, name, pie, shared = false) {
   if (photos.some(photo => photo.src === src)) return;
@@ -359,10 +362,20 @@ function addPhoto(src, name, pie, shared = false) {
   button.type = 'button';
   button.setAttribute('aria-label','Ampliar foto: ' + alt);
   button.append(thumb);
-  const photo = {src, alt, message: pie || '', shared, button};
+  const tile = document.createElement('div');
+  tile.append(button);
+  const photo = {src, alt, message: pie || '', shared, tile};
   photos.push(photo);
   button.onclick = () => { showPhoto(photos.indexOf(photo)); viewer.showModal(); };
-  gallery.append(button);
+  if (ownerKey(photo)) {
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'withdraw-photo';
+    remove.textContent = 'Retirar mi foto';
+    remove.onclick = () => withdrawPhoto(photo);
+    tile.append(remove);
+  }
+  gallery.append(tile);
 }
 document.getElementById('previous').onclick = () => showPhoto(selected - 1);
 document.getElementById('next').onclick = () => showPhoto(selected + 1);
