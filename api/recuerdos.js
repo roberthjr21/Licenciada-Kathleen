@@ -1,6 +1,6 @@
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 import sharp from 'sharp';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -11,21 +11,46 @@ export default async function handler(req, res) {
     if (!enabled) return res.json({ enabled, photos: [] });
     try {
       const photos = [];
+      const captions = {};
       let cursor;
       do {
         const page = await list({ token, prefix, cursor });
-        photos.push(...page.blobs.map(blob => blob.url));
+        for (const blob of page.blobs) {
+          photos.push(blob.url);
+          const parts = blob.pathname.slice(prefix.length).split('/');
+          if (parts[0] === 'v2' && parts.length === 4) {
+            captions[blob.url] = Buffer.from(parts[3].slice(0, -4), 'base64url').toString('utf8');
+          }
+        }
         cursor = page.hasMore ? page.cursor : undefined;
       } while (cursor);
-      return res.json({ enabled, photos });
+      return res.json({ enabled, photos, captions });
     } catch {
       return res.status(503).json({ enabled, error: 'ALBUM_UNAVAILABLE' });
     }
+  }
+  if (req.method === 'DELETE') {
+    if (!enabled) return res.status(503).end();
+    const { path, key } = req.body || {};
+    if (typeof path !== 'string' || !/^v2\/[0-9a-f-]{36}\/[0-9a-f]{64}\/[A-Za-z0-9_-]{0,640}\.jpg$/.test(path)
+        || typeof key !== 'string' || !/^[a-f0-9]{64}$/.test(key)) return res.status(403).end();
+    const digest = createHash('sha256').update(key).digest();
+    if (!timingSafeEqual(digest, Buffer.from(path.split('/')[2], 'hex'))) return res.status(403).end();
+    try {
+      await del(prefix + path, { token });
+      return res.status(204).end();
+    } catch { return res.status(503).end(); }
   }
   if (req.method !== 'POST') return res.status(405).end();
   if (!enabled) return res.status(503).end();
   if (req.headers['content-type'] !== 'application/json') return res.status(415).end();
   if (req.body?.publicar !== true) return res.status(409).json({ error: 'RELOAD_TO_PUBLISH' });
+  const { key, message = '' } = req.body;
+  if (typeof message !== 'string' || message.length > 120) return res.status(400).end();
+  if (typeof key !== 'string' || !/^[a-f0-9]{64}$/.test(key)) return res.status(409).json({ error: 'RELOAD_TO_PUBLISH' });
+  const digest = createHash('sha256').update(key).digest('hex');
+  const caption = Buffer.from(message.trim()).toString('base64url');
+  const path = 'v2/' + randomUUID() + '/' + digest + '/' + caption + '.jpg';
   const data = req.body?.foto;
   if (typeof data !== 'string' || data.length > 3500000) return res.status(400).end();
   let foto;
@@ -37,7 +62,7 @@ export default async function handler(req, res) {
       .jpeg({ quality: 85 }).toBuffer();
   } catch { return res.status(422).end(); }
   try {
-    const blob = await put(prefix + randomUUID() + '.jpg', foto, { token, access: 'public', contentType: 'image/jpeg' });
+    const blob = await put(prefix + path, foto, { token, access: 'public', contentType: 'image/jpeg' });
     return res.status(201).json({ recibida: true, url: blob.url });
   } catch (error) {
     const message = String(error?.message || '');
