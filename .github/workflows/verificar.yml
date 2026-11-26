@@ -16,13 +16,15 @@ jobs:
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           echo LOCK_START
-          gzip -c package-lock.json | base64 -w0
+          node -e "console.log('LOCKJSON:'+JSON.stringify(require('./package-lock.json')))"
           echo
           echo LOCK_END
           npm audit --omit=dev
       - name: Revisar la publicación y retirada en producción
         if: always()
         run: |
+          npm ci --no-audit --fund=false
+          node --input-type=module -e "import sharp from 'sharp'; await sharp({create:{width:32,height:24,channels:3,background:'ivory'}}).jpeg().toFile('/tmp/kathleen-check.jpg')"
           python - <<'PY'
           import base64, json, secrets, urllib.request as u, urllib.error as err, time, subprocess
           base='https://licenciada-kathleen.vercel.app'
@@ -37,7 +39,7 @@ jobs:
               time.sleep(5)
           else: raise RuntimeError('Falta el despliegue protegido')
           print('Cabeceras de seguridad activas',flush=True)
-          jpeg=subprocess.check_output(['convert','-size','32x24','xc:ivory','jpg:-'])
+          jpeg=open('/tmp/kathleen-check.jpg','rb').read()
           key=secrets.token_hex(32)
           status,body=call('POST',dict(foto=base64.b64encode(jpeg).decode(),publicar=True,key=key,message='Control de publicación'))
           assert status==201,(status,body)
