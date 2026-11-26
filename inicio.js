@@ -1,0 +1,1 @@
+document.documentElement.classList.add('js');if(location.hash==='#animar')document.documentElement.classList.add('forzar');setTimeout(()=>document.documentElement.classList.add('titulo-listo'),2500)
